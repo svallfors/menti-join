@@ -45,12 +45,7 @@
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
     color: #fff;
-    background-color: #12153a;
-    background-image:
-      radial-gradient(60vmax 55vmax at 92% 105%, rgba(255, 112, 112, 0.85), transparent 62%),
-      radial-gradient(70vmax 60vmax at 8% -10%, rgba(90, 110, 235, 0.95), transparent 60%),
-      radial-gradient(50vmax 45vmax at 55% 60%, rgba(140, 90, 220, 0.45), transparent 65%),
-      linear-gradient(160deg, #1b2160 0%, #12153a 55%, #2a1638 100%);
+    background: linear-gradient(rgba(20, 22, 70, var(--tint, .15)), rgba(20, 22, 70, var(--tint, .15))), #4a5ae6 url(assets/wallpaper.jpg) center / cover no-repeat;
     -webkit-font-smoothing: antialiased;
   }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: default; }
@@ -83,7 +78,8 @@
   .tryit {
     position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
     display: none; flex-direction: column; align-items: center; gap: 4px;
-    color: rgba(255, 255, 255, 0.5); font-size: 12px; font-weight: 500; white-space: nowrap;
+    color: #fff; font-size: 12px; font-weight: 500; white-space: nowrap;
+    filter: drop-shadow(0 1px 3px rgba(20, 22, 70, .3));
     pointer-events: none;
   }
   .tryit.show { display: flex; }
@@ -308,6 +304,7 @@
     padding: calc(var(--bar-h) * var(--z, 1) + 3vh) 16px 48px; text-align: center;
   }
   body.downloaded .copy, body.downloaded .stage-wrap, body.downloaded .tryit { display: none; }
+  body.downloaded { --tint: .28; }
   body.downloaded .next { display: flex; animation: next-in .45s ease both; }
   @keyframes next-in { from { opacity: 0; transform: translateY(10px); } }
   .next-title { font-size: clamp(32px, 3.4vw, 46px); line-height: 1.05; letter-spacing: -0.035em; font-weight: 750; }
@@ -474,7 +471,7 @@
                 <div class="results" id="results">
                   <div class="result"><span>Yes!</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
                   <div class="result"><span>Doing it now</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
-                  <div class="result"><span>No</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
+                  <div class="result"><span>Never</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
                 </div>
               </div>
               <div class="slide-right">
@@ -501,7 +498,7 @@
               <h2>Have you downloaded it yet?</h2>
               <button class="opt-row" data-answer="yes">Yes!<span class="radio"></span></button>
               <button class="opt-row" data-answer="now">Doing it now<span class="radio"></span></button>
-              <button class="opt-row" data-answer="no">No<span class="radio"></span></button>
+              <button class="opt-row" data-answer="no">Never<span class="radio"></span></button>
               <button class="submit" id="submit" disabled>Submit</button>
             </div>
             <div class="thanks">
@@ -705,7 +702,7 @@
 
   /* ----- The vote inside the Menti window ----- */
   const answers = ['yes', 'now', 'no'];
-  const tally = { yes: 8, now: 4, no: 2 };           // the presentation is already live
+  const tally = { yes: 8, now: 18, no: 1 };          // the presentation is already live; voting Yes! gives 9 / 18 / 1
   const replies = {
     yes: ['🎉', 'Nice. You’re all set for the next Menti.'],
     now: ['⏳', 'Good timing, it’s a tiny download.'],
