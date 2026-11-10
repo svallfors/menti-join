@@ -7,6 +7,14 @@
 <meta name="description" content="A tiny Mac menu bar app that joins the Menti on your screen in one click.">
 <meta property="og:title" content="Menti Join">
 <meta property="og:description" content="A tiny Mac menu bar app that joins the Menti on your screen in one click.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://svallfors.github.io/menti-join/">
+<meta property="og:image" content="https://svallfors.github.io/menti-join/assets/og-image.png">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta property="og:image:alt" content="Menti Join: a Mac menu bar app that opens the Menti from a Google Meet screen share in one click.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://svallfors.github.io/menti-join/assets/og-image.png">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <style>
   :root {
@@ -293,6 +301,39 @@
   .credit a { color: rgba(255, 255, 255, 0.7); text-decoration: underline; text-underline-offset: 2px; }
   .credit a:hover { color: #fff; }
   @media (max-width: 860px) { .copy { padding-bottom: 28px; } .credit { right: 16px; } }
+  /* ---------- After download: permission guide ---------- */
+  .next {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 30px;
+    padding: calc(var(--bar-h) * var(--z, 1) + 3vh) 16px 48px; text-align: center;
+  }
+  body.downloaded .copy, body.downloaded .stage-wrap, body.downloaded .tryit { display: none; }
+  body.downloaded .next { display: flex; animation: next-in .45s ease both; }
+  @keyframes next-in { from { opacity: 0; transform: translateY(10px); } }
+  .next-title { font-size: clamp(32px, 3.4vw, 46px); line-height: 1.05; letter-spacing: -0.035em; font-weight: 750; }
+  .next-sub { text-wrap: balance; margin-top: 10px; font-size: clamp(18px, 1.7vw, 22px); line-height: 1.3; font-weight: 600; color: rgba(255,255,255,.92); }
+  .next .tagline { max-width: 540px; margin: 0 auto; }
+  .next .tagline + .tagline { margin-top: 12px; }
+  .next .meta { margin-top: 20px; }
+  .next .meta a { color: rgba(255,255,255,.85); text-underline-offset: 2px; }
+  .next .meta a:hover { color: #fff; }
+
+  /* A schematic take on the macOS permission prompt */
+  .perm {
+    width: 300px; max-width: 100%; text-align: left; color: #f5f5f7;
+    background: rgba(50, 50, 56, .92); border-radius: 14px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset, 0 24px 60px rgba(0,0,0,.4);
+    user-select: none; -webkit-user-select: none;
+  }
+  .perm-body { display: grid; grid-template-columns: 40px 1fr; gap: 14px; padding: 18px 18px 14px; align-items: start; }
+  .perm-body svg { width: 40px; height: 40px; }
+  .perm-body strong { display: block; text-wrap: balance; font-size: 13px; line-height: 1.3; font-weight: 650; margin-bottom: 9px; }
+  .perm-body i { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,.16); margin-top: 6px; }
+  .perm-body i + i { width: 62%; }
+  .perm-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 0 18px 16px; }
+  .perm-actions span { padding: 3px 10px; border-radius: 6px; font-size: 11.5px; background: rgba(255,255,255,.16); }
+  .perm-actions .go { background: #0a7cff; color: #fff; box-shadow: 0 0 0 3px rgba(10,124,255,.35); }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
   }
@@ -479,6 +520,32 @@
         </div>
       </div>
     </div>
+    <section class="next" id="next" aria-live="polite">
+      <div>
+        <h2 class="next-title">I hope you’ll like it!</h2>
+        <p class="next-sub">Don’t skip this permission</p>
+      </div>
+      <div class="perm" aria-hidden="true">
+        <div class="perm-body">
+          <svg viewBox="0 0 64 64">
+            <path d="M18 30V20a14 14 0 0 1 28 0v10" fill="none" stroke="#c9ccd2" stroke-width="6"/>
+            <rect x="10" y="28" width="44" height="32" rx="5" fill="#f2b33d"/>
+            <rect x="36" y="38" width="24" height="24" rx="6" fill="#ff3b30"/>
+            <circle cx="48" cy="50" r="7" fill="none" stroke="#fff" stroke-width="2.4"/>
+            <circle cx="48" cy="50" r="3.6" fill="#fff"/>
+          </svg>
+          <div>
+            <strong>Menti Join wants to record your screen</strong>
+            <i></i><i></i>
+          </div>
+        </div>
+        <div class="perm-actions"><span class="go">Open Settings</span><span>Deny</span></div>
+      </div>
+      <div>
+        <p class="tagline">The first time you open the app, macOS will ask for screen recording permission. Allow it, so the app can spot the Menti QR code on your screen. The app is notarized by Apple, and it doesn’t collect or share any usage, personal or analytics data.</p>
+        <p class="meta">Download didn’t start? <a id="again" href="https://github.com/svallfors/menti-join/releases/latest/download/Menti-Join.dmg">Try again</a> · <a href="#" id="back">Back</a></p>
+      </div>
+    </section>
     <p class="credit">Unofficial macOS companion app by <a href="https://svallfors.com">Hampus</a>. Menti and all rights belong to <a href="https://www.mentimeter.com">Mentimeter</a>.</p>
   </main>
 
@@ -567,7 +634,8 @@
   }
   function meetVisibleOnTop() {
     // Treat the call as "visible" if it's the frontmost of the two desktop windows
-    return order.filter((n) => n !== 'menti').pop() === 'meet';
+    // (not on the after-download screen, where the windows are hidden)
+    return !document.body.classList.contains('downloaded') && order.filter((n) => n !== 'menti').pop() === 'meet';
   }
   function openMenti() {
     tried = true; tryit.classList.remove('show');
@@ -674,6 +742,18 @@
     page.classList.remove('voted');
   });
   renderResults();
+
+  /* ----- After download: show the permission guide (the download itself still runs) ----- */
+  document.querySelector('.copy .download').addEventListener('click', () => {
+    closePopover();
+    document.body.classList.add('downloaded');
+    setMenu('idle');           // no Menti on screen here, so just the icon
+  });
+  $('back').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.body.classList.remove('downloaded');
+    onFrontmostChanged();      // restore Join / Back to Menti for the window in front
+  });
 
   /* ----- Initial state ----- */
   focusWindow('meet');   // start with the call in front, so Join Menti is offered right away
