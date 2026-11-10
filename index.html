@@ -11,21 +11,20 @@
 <style>
   :root {
     --bar-h: 30px;
-    --bar-text: #fff;
-    --pop-bg: rgba(246, 246, 248, 0.88);
+    --pop-bg: rgba(246, 246, 248, 0.9);
     --pop-border: rgba(0, 0, 0, 0.12);
     --pop-text: #1d1d1f;
-    --pop-secondary: rgba(0, 0, 0, 0.5);
     --pop-divider: rgba(0, 0, 0, 0.1);
     --btn-bg: #fff;
     --btn-border: rgba(0, 0, 0, 0.12);
+    --menti-blue: #5f6ae6;
+    --menti-coral: #f17f71;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --pop-bg: rgba(40, 40, 46, 0.86);
+      --pop-bg: rgba(40, 40, 46, 0.88);
       --pop-border: rgba(255, 255, 255, 0.14);
       --pop-text: #f5f5f7;
-      --pop-secondary: rgba(255, 255, 255, 0.55);
       --pop-divider: rgba(255, 255, 255, 0.12);
       --btn-bg: rgba(255, 255, 255, 0.16);
       --btn-border: rgba(255, 255, 255, 0.08);
@@ -46,40 +45,48 @@
       linear-gradient(160deg, #1b2160 0%, #12153a 55%, #2a1638 100%);
     -webkit-font-smoothing: antialiased;
   }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: default; }
 
-  /* ---------- Menu bar ---------- */
+  /* ---------- Menu bar (cropped: only the right-hand side is in frame) ---------- */
   .menubar {
     position: fixed; inset: 0 0 auto 0; height: var(--bar-h);
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: flex-end;
     padding: 0 10px;
     background: rgba(10, 12, 40, 0.28);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
     backdrop-filter: blur(24px) saturate(160%);
-    color: var(--bar-text);
     font-size: 14px; letter-spacing: -0.01em;
-    user-select: none; z-index: 10;
+    user-select: none; -webkit-user-select: none; z-index: 50;
+    zoom: var(--z, 1);
   }
-  .menubar .left, .menubar .right { display: flex; align-items: center; height: 100%; }
-  .menubar .left span { padding: 0 9px; opacity: 0.95; }
-  .menubar .left .app { font-weight: 700; }
-  .menubar .right > * { display: flex; align-items: center; height: calc(var(--bar-h) - 6px); padding: 0 8px; }
-  .status-anchor { position: relative; }
-  .status-item {
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.24);
-  }
-  .status-icon {
-    width: 18px; height: 18px; background: #fff;
-    -webkit-mask: url(assets/menubar-icon.png) center / contain no-repeat;
-    mask: url(assets/menubar-icon.png) center / contain no-repeat;
-  }
+  .menubar .right { display: flex; align-items: center; height: 100%; }
+  .menubar .right > * { display: flex; align-items: center; height: calc(var(--bar-h) - 6px); padding: 0 8px; border-radius: 6px; }
   .menubar svg { display: block; }
-  .clock { font-variant-numeric: tabular-nums; }
+  .status-anchor { position: relative; padding: 0 !important; }
+  .status-item { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 8px; border-radius: 6px; color: #fff; cursor: pointer; position: relative; }
+  .status-item.pressed { background: rgba(255, 255, 255, 0.24); }
+  .status-icon { width: 17px; height: 17px; flex: none; display: block; }
+  .status-item .join-icon, .status-item .back-icon, .status-item .join-label { display: none; }
+  .status-item.back .status-icon { display: none; }
+  .status-item.back .back-icon, .status-item.back .join-label { display: block; }
+  .status-item.join .status-icon { display: none; }
+  .status-item.join .join-icon, .status-item.join .join-label { display: block; }
+  .join-label { white-space: nowrap; }
+  .tryit {
+    position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    display: none; flex-direction: column; align-items: center; gap: 4px;
+    color: rgba(255, 255, 255, 0.5); font-size: 12px; font-weight: 500; white-space: nowrap;
+    pointer-events: none;
+  }
+  .tryit.show { display: flex; }
+  .tryit-arrow { animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .clock { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-  /* ---------- Popover ---------- */
+  /* ---------- Popover (shown when a manual scan finds nothing) ---------- */
   .popover {
     position: absolute; top: calc(100% + 12px); left: 50%;
-    width: 330px;
+    width: 300px;
     transform: translateX(calc(-50% + var(--shift, 0px)));
     color: var(--pop-text);
     background: var(--pop-bg);
@@ -88,51 +95,53 @@
     border: 0.5px solid var(--pop-border);
     border-radius: 12px;
     box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38), 0 4px 14px rgba(0, 0, 0, 0.18);
-    padding: 14px;
+    padding: 12px;
     font-size: 13px; line-height: 1.35;
-    animation: pop-in 0.5s cubic-bezier(.2,.9,.3,1.2) 0.25s both;
-    transform-origin: 50% 0;
+    display: none;
   }
-  .popover::before { /* arrow */
+  .popover.open { display: block; animation: pop-in 0.22s ease-out both; }
+  .popover::before {
     content: ""; position: absolute; top: -8px;
     left: calc(50% - var(--shift, 0px) - 9px);
-    width: 18px; height: 9px;
-    background: var(--pop-bg);
+    width: 18px; height: 9px; background: var(--pop-bg);
     clip-path: polygon(50% 0, 100% 100%, 0 100%);
   }
-  @keyframes pop-in {
-    from { opacity: 0; transform: translateX(calc(-50% + var(--shift, 0px))) scale(0.92) translateY(-6px); }
-    to   { opacity: 1; transform: translateX(calc(-50% + var(--shift, 0px))) scale(1) translateY(0); }
-  }
-  .row { display: flex; align-items: center; gap: 9px; }
-  .scanning { font-size: 12px; margin-bottom: 12px; }
-  .spinner { width: 16px; height: 16px; animation: spin 0.9s steps(8) infinite; color: var(--pop-text); }
+  @keyframes pop-in { from { opacity: 0; } to { opacity: 1; } }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .pop-msg { font-size: 11px; opacity: 0.6; margin-bottom: 12px; }
+  .pop-scanning { font-size: 11px; margin-bottom: 12px; display: none; }
+  .popover.scanning .pop-msg { display: none; }
+  .rejoin { display: none; margin-bottom: 10px; }
+  .popover.can-rejoin:not(.scanning) .rejoin { display: block; }
+  .mac-btn.primary { background: #0a84ff; color: #fff; border-color: transparent; }
+  .rejoin small { display: block; margin-top: 4px; font-size: 10.5px; opacity: 0.6; }
+  .popover.scanning .pop-scanning { display: flex; }
+  .spinner { width: 14px; height: 14px; animation: spin 0.9s steps(8) infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .mac-btn {
     display: inline-flex; align-items: center; gap: 6px;
-    font: inherit; font-size: 13px; color: var(--pop-text);
-    background: var(--btn-bg);
-    border: 0.5px solid var(--btn-border);
-    border-radius: 6px; padding: 3px 11px;
+    font-size: 13px; color: var(--pop-text);
+    background: var(--btn-bg); border: 0.5px solid var(--btn-border);
+    border-radius: 6px; padding: 2px 10px;
     box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
   }
-  .mac-btn[disabled] { opacity: 0.45; }
+  .popover.scanning .retry { opacity: 0.45; pointer-events: none; }
   .divider { height: 1px; background: var(--pop-divider); margin: 12px 0; }
 
-  /* ---------- Hero copy ---------- */
+  /* ---------- Page layout ---------- */
   main {
-    position: relative;
-    height: 100dvh;
-    display: flex; align-items: center;
-    padding: calc(var(--bar-h) + 24px) clamp(16px, 7vw, 120px) 24px;
+    position: relative; height: 100dvh;
+    display: grid; grid-template-columns: minmax(300px, 480px) 1fr; gap: 4vw;
+    align-items: center;
+    padding: calc(var(--bar-h) * var(--z, 1) + 3vh) clamp(16px, 5vw, 96px) 3vh;
   }
-  .copy { max-width: 440px; }
-  .copy img { width: 76px; height: 76px; margin-bottom: 18px; border-radius: 18px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.35)); }
-  h1 { font-size: clamp(38px, 5vw, 60px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 750; }
-  .tagline { margin-top: 14px; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.45; color: rgba(255,255,255,.82); }
+  .copy img { width: 72px; height: 72px; margin-bottom: 16px; border-radius: 17px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.35)); }
+  h1 { font-size: clamp(36px, 4.4vw, 58px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 750; }
+  .tagline { text-wrap: balance; margin-top: 14px; font-size: clamp(16px, 1.5vw, 19px); line-height: 1.45; color: rgba(255,255,255,.82); }
   .download {
     display: inline-flex; align-items: center; gap: 10px;
-    margin-top: 28px; padding: 14px 24px;
+    margin-top: 26px; padding: 14px 24px;
     font-size: 17px; font-weight: 650; text-decoration: none;
     color: #12153a; background: #fff; border-radius: 999px;
     box-shadow: 0 12px 30px rgba(0,0,0,.28);
@@ -142,44 +151,182 @@
   .download:focus-visible { outline: 3px solid #ffb4b4; outline-offset: 3px; }
   .meta { margin-top: 14px; font-size: 13px; color: rgba(255,255,255,.6); }
 
-  /* ---------- Small screens ---------- */
-  /* ---------- Large screens: zoom the "desktop" so the app reads as the hero ---------- */
-  .menubar { zoom: var(--z, 1); }
-  main { --bar-h: calc(30px * var(--z, 1)); }
-  @media (min-width: 1200px) and (min-height: 700px) { :root { --z: 1.3; } }
-  @media (min-width: 1600px) and (min-height: 850px) { :root { --z: 1.5; } }
+  /* ---------- Desktop "stage" with windows (fixed design size, scaled to fit) ---------- */
+  .stage-wrap { position: relative; height: 100%; min-height: 0; }
+  .stage {
+    position: absolute; top: 50%; left: 50%;
+    width: 860px; height: 600px;
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+    color: #1d1d1f; user-select: none; -webkit-user-select: none;
+  }
+  .win {
+    position: absolute; border-radius: 11px; overflow: hidden; background: #fff;
+    box-shadow: 0 0 0 0.5px rgba(0,0,0,.35), 0 18px 50px rgba(0,0,0,.42), 0 4px 12px rgba(0,0,0,.2);
+    cursor: default;
+    transition: box-shadow .2s;
+  }
+  .win:not(.focused) { box-shadow: 0 0 0 0.5px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.28); }
+  .titlebar { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #ececec; border-bottom: 1px solid #d6d6d6; font-size: 13px; font-weight: 600; color: #4a4a4a; position: relative; }
+  .titlebar .title { position: absolute; left: 0; right: 0; text-align: center; pointer-events: none; }
+  .lights { display: flex; gap: 8px; position: relative; z-index: 1; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; background: #d0d0d0; display: block; }
+  .win.focused .lights i:nth-child(1) { background: #ff5f57; }
+  .win.focused .lights i:nth-child(2) { background: #febc2e; }
+  .win.focused .lights i:nth-child(3) { background: #28c840; }
+  .win:not(.focused) .titlebar { background: #f6f6f6; color: #b0b0b0; }
+  .bar { height: 9px; border-radius: 5px; background: #e6e6ea; }
 
-  @media (max-width: 900px) { .menubar .left .extra { display: none; } }
-  @media (max-width: 720px) {
-    main { align-items: flex-end; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+  /* Notes-like window */
+  #win-notes { left: 380px; top: 36px; width: 460px; height: 450px; }
+  .notes-body { display: grid; grid-template-columns: 150px 1fr; height: calc(100% - 30px); }
+  .notes-side { background: #f4f3f7; border-right: 1px solid #e3e3e8; padding: 16px 14px; display: grid; gap: 14px; align-content: start; }
+  .notes-side .item { display: grid; gap: 6px; padding: 8px; border-radius: 7px; }
+  .notes-side .item.sel { background: #e1def0; }
+  .notes-main { padding: 26px 30px; display: grid; gap: 13px; align-content: start; }
+  .notes-main .h { height: 16px; width: 55%; background: #d4d4dc; border-radius: 6px; margin-bottom: 8px; }
+
+  /* Browser window with a shared Menti presentation in a video call */
+  #win-meet { left: 20px; top: 170px; width: 610px; height: 420px; background: #202124; }
+  #win-meet .titlebar { background: #dfe3ec; border-bottom: 0; height: 36px; }
+  #win-meet:not(.focused) .titlebar { background: #eceef2; }
+  .tab { position: absolute; left: 86px; bottom: 0; height: 28px; width: 190px; background: #fff; border-radius: 9px 9px 0 0; display: flex; align-items: center; gap: 7px; padding: 0 10px; font-size: 11.5px; font-weight: 500; color: #333; }
+  .tab .meet-icon { width: 15px; height: 12px; flex: none; display: block; }
+  .tab .rec { width: 8px; height: 8px; border-radius: 50%; border: 2px solid #ea4335; margin-left: auto; }
+  .urlbar { height: 34px; background: #fff; display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid #e3e3e3; }
+  .urlbar .pill { height: 22px; flex: 1; border-radius: 11px; background: #f0f2f5; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #666; }
+  .call { position: absolute; inset: 70px 0 0 0; padding: 14px 14px 46px; }
+  .slide { position: relative; height: 100%; background: #fff; border-radius: 4px; display: grid; grid-template-columns: 1fr 138px; gap: 26px; padding: 18px 18px 18px 26px; overflow: hidden; }
+  .slide-left { display: flex; flex-direction: column; justify-content: center; gap: 16px; min-width: 0; }
+  .slide-left.live { display: none; }
+  .slide.revealed .slide-left.skeleton { display: none; }
+  .slide.revealed .slide-left.live { display: flex; animation: fade .4s ease-out both; }
+  .sk { height: 12px; border-radius: 4px; background: #e9e9ee; }
+  .sk-rows { display: grid; gap: 12px; margin-top: 6px; }
+  .sk-row { display: flex; gap: 10px; }
+  .slide-q { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: #101014; }
+  .results { display: grid; gap: 11px; }
+  .result { display: grid; grid-template-columns: 78px 1fr 18px; align-items: center; gap: 8px; font-size: 10.5px; color: #444; }
+  .result .track { height: 14px; border-radius: 3px; background: #f0f0f4; overflow: hidden; }
+  .result .fill { height: 100%; width: var(--w, 0%); background: #5769e7; border-radius: 3px; transition: width .6s cubic-bezier(.2,.9,.3,1); }
+  .result:nth-child(2) .fill { background: #ff7471; }
+  .result:nth-child(3) .fill { background: #2b2b33; }
+  .result .n { text-align: right; font-variant-numeric: tabular-nums; }
+  .slide-right { display: flex; flex-direction: column; gap: 8px; }
+  .brand { display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-weight: 700; font-size: 11px; letter-spacing: -0.02em; }
+  .qr-card { background: #f3f3f5; border-radius: 10px; padding: 10px; text-align: center; }
+  .qr-card svg { width: 100%; height: auto; background: #fff; border-radius: 4px; padding: 5px; display: block; }
+  .qr-card .url { margin-top: 6px; font-size: 11.5px; color: #555; }
+  .qr-card .code { font-size: 17px; font-weight: 700; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+  .call-controls { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; gap: 8px; }
+  .call-controls i { width: 26px; height: 22px; border-radius: 11px; background: #3c4043; display: block; }
+  .call-controls i.end { width: 40px; background: #ea4335; }
+  .tile { position: absolute; right: 14px; bottom: 6px; width: 56px; height: 34px; border-radius: 7px; background: linear-gradient(135deg, #7b4a4a, #4a2c3a); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .tile::after { content: ""; position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px; border-radius: 50%; background: #d9b8a4; }
+
+  /* Menti Join's participant window */
+  #win-menti { left: 520px; top: 8px; width: 300px; height: 540px; display: none; }
+  #win-menti.open { display: block; animation: win-in .28s cubic-bezier(.2,.9,.3,1.1) both; }
+  @keyframes win-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+  #win-menti .titlebar { background: #fff; border-bottom: 0; color: #444; }
+  #win-menti:not(.focused) .titlebar { background: #fff; }
+  .progress { height: 4px; background: #e8e8f6; }
+  .progress span { display: block; height: 100%; width: 0; background: #b3b6ee; }
+  #win-menti.open .progress span { animation: load 1.2s ease-out .1s forwards; }
+  @keyframes load { to { width: 97%; } }
+  .menti-page { height: calc(100% - 34px); display: flex; flex-direction: column; align-items: center; padding: 22px 20px 20px; text-align: center; color: #101014; }
+  .menti-page > * { opacity: 0; }
+  #win-menti.open .menti-page > * { animation: fade .35s ease-out .55s forwards; }
+  @keyframes fade { to { opacity: 1; } }
+  .wordmark { display: block; width: 92px; height: auto; }
+  .vote { width: 100%; margin-top: 22px; text-align: left; }
+  .vote h2 { font-size: 19px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 12px; }
+  .opt-row {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    height: 46px; padding: 0 12px 0 18px; margin-bottom: 8px;
+    border: 1px solid #9a9a9a; border-radius: 23px; background: #fff;
+    font-size: 13px; color: #3a3a3a; cursor: pointer; text-align: left;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .opt-row:hover { border-color: #5769e7; }
+  .opt-row .radio { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #9a9a9a; display: grid; place-items: center; transition: border-color .15s; }
+  .opt-row .radio::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #5769e7; transform: scale(0); transition: transform .15s; }
+  .opt-row.sel { border-color: #5769e7; box-shadow: 0 0 0 1px #5769e7; color: #101014; }
+  .opt-row.sel .radio { border-color: #5769e7; }
+  .opt-row.sel .radio::after { transform: scale(1); }
+  .submit { display: block; margin: 12px auto 0; padding: 0 26px; height: 40px; border-radius: 20px; background: #5769e7; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .submit[disabled] { opacity: .4; cursor: default; }
+  .thanks { display: none; margin-top: 30px; text-align: center; }
+  .thanks .big { font-size: 34px; }
+  .thanks h2 { font-size: 19px; font-weight: 500; letter-spacing: -0.02em; margin: 10px 0 6px; }
+  .thanks p { font-size: 12.5px; color: #555; }
+  .thanks button { margin-top: 14px; font-size: 12.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .menti-page.voted .vote { display: none; }
+  .menti-page.voted .thanks { display: block; }
+  #win-menti.open .menti-page.voted .thanks { animation-delay: 0s; animation-duration: .25s; }
+  .menti-page .spacer { flex: 1; }
+  .menti-links { display: flex; gap: 22px; font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em; }
+  .menti-links span { display: inline-flex; align-items: center; gap: 5px; }
+  .create { margin-top: 18px; font-size: 12.5px; color: #555; }
+  .create u { color: #101014; text-underline-offset: 2px; }
+
+  /* ---------- Large screens: zoom the menu bar a bit ---------- */
+  @media (min-width: 1200px) and (min-height: 700px) { :root { --z: 1.2; } }
+  @media (min-width: 1600px) and (min-height: 850px) { :root { --z: 1.35; } }
+
+  /* ---------- Narrow screens: scene on top, copy below ---------- */
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; gap: 2vh; align-items: stretch; }
+    .stage-wrap { order: 0; }
+    .copy { order: 1; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
     .copy img { display: none; }
-    .tagline { margin-top: 10px; }
-    .download { margin-top: 20px; }
+    .download { margin-top: 18px; }
   }
   @media (max-width: 520px) {
-    .menubar .left span:not(.app) { display: none; }
-    .menubar .right .opt { display: none; }
-    .popover { width: min(330px, calc(100vw - 32px)); }
+    .menubar .opt { display: none !important; }
+    .popover { width: min(300px, calc(100vw - 32px)); }
+    .tagline { margin-top: 8px; }
   }
+  .credit {
+    position: absolute; left: clamp(16px, 5vw, 96px); bottom: max(12px, env(safe-area-inset-bottom));
+    font-size: 11px; color: rgba(255, 255, 255, 0.45);
+  }
+  .credit a { color: rgba(255, 255, 255, 0.7); text-decoration: underline; text-underline-offset: 2px; }
+  .credit a:hover { color: #fff; }
+  @media (max-width: 860px) { .copy { padding-bottom: 28px; } .credit { right: 16px; } }
   @media (prefers-reduced-motion: reduce) {
-    .popover, .spinner { animation: none; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
   }
 </style>
 </head>
 <body>
-  <header class="menubar" aria-hidden="true">
-    <div class="left">
-      <span class="app">Google Chrome</span>
-      <span>File</span><span>Edit</span><span>View</span><span class="extra">History</span><span class="extra">Bookmarks</span><span class="extra">Profiles</span><span>Tab</span><span>Window</span><span>Help</span>
-    </div>
+  <header class="menubar">
     <div class="right">
       <div class="status-anchor">
-        <div class="status-item"><div class="status-icon"></div></div>
-        <div class="popover" id="popover">
-          <div class="row scanning">
+        <button class="status-item" id="status" aria-label="Menti Join menu bar item">
+          <svg class="status-icon" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+            <path d="M14 24C14 16.2697 7.73026 10 0 10V24H14Z"/>
+            <path d="M9 12C6.48215 9.74859 3.64133 9.00444 0 9V0H4.7515L9 9.5V12Z"/>
+            <path d="M10 9.5L14.2662 9.60179V4.79641H19.133V0H23.9998V24H15C15 19 12.7231 14.9497 10 12.5V9.5Z"/>
+          </svg>
+          <svg class="join-icon" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+            <defs><mask id="arrow-cut"><rect width="16" height="16" fill="#fff"/><path d="M4.3 8h6.6M8.2 4.9 11.3 8l-3.1 3.1" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>
+            <circle cx="8" cy="8" r="7.5" fill="#fff" mask="url(#arrow-cut)"/>
+          </svg>
+          <svg class="back-icon" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+            <defs><mask id="back-cut"><rect width="16" height="16" fill="#fff"/><path d="M6.4 4.6 3.9 7.1l2.5 2.5M4.2 7.1h4.6a2.6 2.6 0 0 1 0 5.2H7.6" stroke="#000" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>
+            <circle cx="8" cy="8" r="7.5" fill="#fff" mask="url(#back-cut)"/>
+          </svg>
+          <span class="join-label" id="join-label">Join Menti</span>
+        </button>
+        <div class="tryit" id="tryit" aria-hidden="true">
+          <svg class="tryit-arrow" width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V3M1.5 8.5 7 3l5.5 5.5"/></svg>
+          <span>Try it</span>
+        </div>
+        <div class="popover" id="popover" role="dialog" aria-label="Menti Join">
+          <div class="row pop-scanning">
             <svg class="spinner" viewBox="0 0 16 16" aria-hidden="true">
               <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                <line x1="8" y1="1.5" x2="8" y2="4.5" opacity="1"/>
+                <line x1="8" y1="1.5" x2="8" y2="4.5"/>
                 <line x1="8" y1="1.5" x2="8" y2="4.5" opacity=".88" transform="rotate(-45 8 8)"/>
                 <line x1="8" y1="1.5" x2="8" y2="4.5" opacity=".76" transform="rotate(-90 8 8)"/>
                 <line x1="8" y1="1.5" x2="8" y2="4.5" opacity=".64" transform="rotate(-135 8 8)"/>
@@ -191,64 +338,346 @@
             </svg>
             <span>Scanning for Menti QR...</span>
           </div>
-          <button class="mac-btn" disabled tabindex="-1">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.8-4.07"/><path d="M13.5 2.5v3.2h-3.2"/></svg>
+          <p class="pop-msg">No Menti QR or join instruction code found. Make sure it is visible and try again.</p>
+          <div class="rejoin">
+            <button class="mac-btn primary" id="rejoin">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.8 6.5H10a3.5 3.5 0 0 1 0 7H8"/></svg>
+              Rejoin last Menti
+            </button>
+            <small id="joined-at">Joined at 09:41</small>
+          </div>
+          <button class="mac-btn retry" id="retry">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.8-4.07"/><path d="M13.5 2.5v3.2h-3.2"/></svg>
             Retry
           </button>
           <div class="divider"></div>
-          <button class="mac-btn" tabindex="-1">Quit</button>
+          <button class="mac-btn" id="quit">Quit</button>
         </div>
       </div>
-      <div class="opt">
+      <div class="opt" aria-hidden="true">
         <svg width="18" height="14" viewBox="0 0 18 14" fill="#fff"><path d="M9 13.2a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4Z"/><path d="M9 6.1c1.8 0 3.4.7 4.6 1.9l-1.4 1.4A4.5 4.5 0 0 0 9 8.1c-1.2 0-2.4.5-3.2 1.3L4.4 8A6.5 6.5 0 0 1 9 6.1Z"/><path d="M9 2c2.9 0 5.6 1.2 7.5 3.1l-1.4 1.4A8.6 8.6 0 0 0 9 4a8.6 8.6 0 0 0-6.1 2.5L1.5 5.1A10.6 10.6 0 0 1 9 2Z"/></svg>
       </div>
-      <div class="opt">
+      <div class="opt" aria-hidden="true">
         <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".75" y=".75" width="22.5" height="11.5" rx="3.3" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/><rect x="2.6" y="2.6" width="15.5" height="7.8" rx="1.8" fill="#fff"/><path d="M25 4.4v4.2c.8-.3 1.3-1.1 1.3-2.1s-.5-1.8-1.3-2.1Z" fill="#fff" fill-opacity=".55"/></svg>
       </div>
-      <div class="clock" id="clock">Tue 10 Nov 09:41</div>
+      <div class="opt" aria-hidden="true">
+        <svg width="17" height="14" viewBox="0 0 17 14" fill="none" stroke="#fff" stroke-width="1.4"><rect x=".7" y=".7" width="15.6" height="5.4" rx="2.7"/><rect x=".7" y="7.9" width="15.6" height="5.4" rx="2.7"/><circle cx="12.6" cy="3.4" r="1.5" fill="#fff" stroke="none"/><circle cx="4.4" cy="10.6" r="1.5" fill="#fff" stroke="none"/></svg>
+      </div>
+      <div class="clock" id="clock" aria-hidden="true">Tue 10 Nov 09:41</div>
     </div>
   </header>
 
   <main>
     <section class="copy">
-      <img src="assets/app-icon.png" alt="" width="76" height="76">
+      <img src="assets/app-icon.png" alt="" width="72" height="72">
       <h1>Menti Join</h1>
       <p class="tagline">Sits in your menu bar and joins the Menti on your screen in one click. No phone, no typing codes.</p>
       <a class="download" href="https://github.com/svallfors/menti-join-releases/releases/latest/download/Menti-Join.dmg">
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10"/><path d="m5.5 8.8 4.5 4.5 4.5-4.5"/><path d="M4 17h12"/></svg>
         Download for Mac
       </a>
-      <p class="meta">Free · macOS 15.5 or later · Signed and notarized</p>
+      <p class="meta">Free · macOS 15.5 or later</p>
     </section>
+
+    <div class="stage-wrap" id="stage-wrap" aria-hidden="true">
+      <div class="stage" id="stage">
+
+        <!-- Something else: a notes app -->
+        <div class="win" id="win-notes" data-win="notes">
+          <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><div class="title">Notes</div></div>
+          <div class="notes-body">
+            <div class="notes-side">
+              <div class="item sel"><div class="bar" style="width:80%;background:#cfcbe3"></div><div class="bar" style="width:55%"></div></div>
+              <div class="item"><div class="bar" style="width:70%"></div><div class="bar" style="width:45%"></div></div>
+              <div class="item"><div class="bar" style="width:85%"></div><div class="bar" style="width:50%"></div></div>
+              <div class="item"><div class="bar" style="width:60%"></div><div class="bar" style="width:40%"></div></div>
+            </div>
+            <div class="notes-main">
+              <div class="h"></div>
+              <div class="bar" style="width:92%"></div><div class="bar" style="width:86%"></div><div class="bar" style="width:74%"></div>
+              <div class="bar" style="width:0;height:6px;background:none"></div>
+              <div class="bar" style="width:88%"></div><div class="bar" style="width:64%"></div>
+              <div class="bar" style="width:0;height:6px;background:none"></div>
+              <div class="bar" style="width:80%"></div><div class="bar" style="width:90%"></div><div class="bar" style="width:40%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A video call with a shared Menti presentation -->
+        <div class="win" id="win-meet" data-win="meet">
+          <div class="titlebar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="tab"><svg class="meet-icon" viewBox="0 0 15 12" aria-hidden="true">
+              <path d="M0 3L3 0V3z" fill="#ea4335"/>
+              <path d="M3 0H9.5a1.5 1.5 0 0 1 1.5 1.5V6H3z" fill="#fbbc04"/>
+              <path d="M0 3H3V9H0z" fill="#4285f4"/>
+              <path d="M0 9H3V12H1.5A1.5 1.5 0 0 1 0 10.5z" fill="#1967d2"/>
+              <path d="M3 6H11V10.5A1.5 1.5 0 0 1 9.5 12H3z" fill="#34a853"/>
+              <path d="M11 4.6L15 1.6V10.4L11 7.4z" fill="#188038"/>
+            </svg>Weekly all-hands<span class="rec"></span></div>
+          </div>
+          <div class="urlbar"><div class="pill">meet.google.com/abc-defg-hij</div></div>
+          <div class="call">
+            <div class="slide">
+              <div class="slide-left skeleton">
+                <div class="sk" style="width:82%;height:16px"></div>
+                <div class="sk" style="width:55%;height:16px"></div>
+                <div class="sk-rows">
+                  <div class="sk-row"><div class="sk" style="width:70px"></div><div class="sk" style="flex:1"></div></div>
+                  <div class="sk-row"><div class="sk" style="width:70px"></div><div class="sk" style="flex:1"></div></div>
+                  <div class="sk-row"><div class="sk" style="width:70px"></div><div class="sk" style="flex:1"></div></div>
+                </div>
+              </div>
+              <div class="slide-left live">
+                <div class="slide-q">Have you downloaded it yet?</div>
+                <div class="results" id="results">
+                  <div class="result"><span>Yes!</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
+                  <div class="result"><span>Doing it now</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
+                  <div class="result"><span>No</span><div class="track"><div class="fill"></div></div><span class="n">0</span></div>
+                </div>
+              </div>
+              <div class="slide-right">
+                <div class="brand"><svg width="54" height="12" viewBox="0 0 116 25" aria-label="Menti"><use href="#menti-mark"/><use href="#menti-word"/></svg></div>
+                <div class="qr-card">
+                  <svg id="qr" viewBox="0 0 25 25" shape-rendering="crispEdges"></svg>
+                  <div class="url">menti.com</div>
+                  <div class="code">1234 5678</div>
+                </div>
+              </div>
+            </div>
+            <div class="tile"></div>
+            <div class="call-controls"><i></i><i></i><i></i><i></i><i class="end"></i></div>
+          </div>
+        </div>
+
+        <!-- Menti Join's participant window -->
+        <div class="win" id="win-menti" data-win="menti">
+          <div class="titlebar"><div class="lights"><i id="menti-close" title="Close" style="cursor:pointer"></i><i></i><i></i></div><div class="title">Menti</div></div>
+          <div class="progress"><span></span></div>
+          <div class="menti-page">
+            <svg class="wordmark" viewBox="0 0 116 25" aria-label="Menti"><use href="#menti-mark"/><use href="#menti-word"/></svg>
+            <div class="vote" id="vote">
+              <h2>Have you downloaded it yet?</h2>
+              <button class="opt-row" data-answer="yes">Yes!<span class="radio"></span></button>
+              <button class="opt-row" data-answer="now">Doing it now<span class="radio"></span></button>
+              <button class="opt-row" data-answer="no">No<span class="radio"></span></button>
+              <button class="submit" id="submit" disabled>Submit</button>
+            </div>
+            <div class="thanks">
+              <div class="big" id="thanks-emoji">🎉</div>
+              <h2>Thanks for voting!</h2>
+              <p id="thanks-text">Your answer has been sent.</p>
+              <button id="change">Change answer</button>
+            </div>
+            <div class="spacer"></div>
+            <div class="menti-links">
+              <span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx=".5"/><rect x="9.5" y="1.5" width="5" height="5" rx=".5"/><rect x="1.5" y="9.5" width="5" height="5" rx=".5"/><path d="M9.5 9.5h2M13.5 9.5v2M9.5 13.5h1.5M12.5 12.5v2"/></svg>Share code</span>
+              <span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="7"/><circle cx="8" cy="4.6" r=".9" fill="currentColor" stroke="none"/><path d="M4.8 6.6 8 7.3l3.2-.7M8 7.3v2.4M6.4 12.2 8 9.7l1.6 2.5"/></svg>Change appearance</span>
+            </div>
+            <p class="create">Create your own Menti at <u>mentimeter.com</u></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="credit">Unofficial macOS companion app by <a href="https://svallfors.com">Hampus</a>. Menti and all rights belong to <a href="https://www.mentimeter.com">Mentimeter</a>.</p>
   </main>
 
+  <!-- Menti mark + wordmark (official artwork), drawn once and reused -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="menti-mark">
+        <path d="M24 0V24H14.4002C14.4002 19.7361 12.5447 15.9079 9.60034 13.2723V9.60326H14.4002V4.8H19.2001V0H24Z" fill="#5769E7"/>
+        <path d="M14.3969 23.9988C14.3969 16.0475 7.95117 9.60156 0 9.60156V23.9988H14.3969Z" fill="#FF7471"/>
+        <path d="M9.59132 13.2653C7.04921 10.9922 3.69639 9.60733 0.0192831 9.60272H0V0H4.79987L9.59974 9.60326V13.2723C9.5973 13.2701 9.59404 13.2677 9.59132 13.2653Z" fill="black"/>
+      </g>
+      <g id="menti-word" fill="black">
+        <path d="M54.752 0L49.0248 22.5589L43.3012 0H36V23.9973H39.7692V2.08984L45.3233 23.9973H52.6245L58.2125 2.08984V23.9973H61.9855V0H54.752Z"/>
+        <path d="M81.0476 15.7018L67.3338 17.69C68.1207 19.6781 70.0072 21.0149 72.2703 21.0149C74.5333 21.0149 76.3483 19.7798 77.2068 17.8971L80.5317 19.0267C79.195 22.1106 76.0734 24.3398 72.2364 24.3398C67.1982 24.3398 63.3574 20.4651 63.3574 15.5625C63.3574 10.6598 67.1982 6.78516 72.2364 6.78516C77.2746 6.78516 81.1154 10.5544 81.0476 15.698M76.8981 13.371C76.145 11.074 74.5333 10.0799 72.2364 10.0799C69.3219 10.0799 67.2999 12.0342 66.9572 14.7416L76.8981 13.371Z"/>
+        <path d="M97.7097 12.9946V23.9973H94.076V13.8493C94.076 11.1758 92.9803 10.0801 90.6494 10.0801C87.9759 10.0801 86.0556 11.7934 86.0556 14.7756V23.9973H82.4219V7.13172H86.0556V9.56421C87.1513 7.7116 89.1734 6.78906 91.4703 6.78906C95.0701 6.78906 97.7097 8.95044 97.7097 12.9946Z"/>
+        <path d="M104.803 7.13173H110.048V10.0801H104.803V18.9591C104.803 20.4314 105.763 21.0828 107.066 21.0828C107.958 21.0828 108.779 20.8757 109.604 20.4653V23.6885C108.851 24.0312 107.514 24.306 106.554 24.306C102.92 24.306 101.173 22.5928 101.173 18.9591V10.0801H98.7405V7.13173H101.173V2.98218L104.807 0.207031V7.13173H104.803Z"/>
+        <path d="M111.215 2.84635C111.215 1.61127 112.209 0.617188 113.444 0.617188C114.679 0.617188 115.673 1.61127 115.673 2.84635C115.673 4.08142 114.679 5.0755 113.444 5.0755C112.209 5.0755 111.215 4.08142 111.215 2.84635ZM111.697 7.13145H115.331V23.997H111.697V7.13145Z"/>
+      </g>
+    </defs>
+  </svg>
+
 <script>
-  // Live menu bar clock
-  const clock = document.getElementById('clock');
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const status = $('status'), popover = $('popover'), tryit = $('tryit');
+  const wins = { notes: $('win-notes'), meet: $('win-meet'), menti: $('win-menti') };
+  let order = ['meet', 'notes'];            // back → front
+  let menuState = 'idle', scanTimer = null, tried = false, joinedAt = null;
+
+  /* ----- Clock ----- */
   function tick() {
     const d = new Date();
     const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '');
     const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    clock.textContent = day + '  ' + time;
+    $('clock').textContent = day + '  ' + time;
   }
   tick(); setInterval(tick, 15000);
 
-  // Keep the popover inside the viewport; the arrow stays on the icon (like macOS)
-  const pop = document.getElementById('popover');
-  function place() {
-    pop.style.setProperty('--shift', '0px');
-    // Work in the menu bar's own (unzoomed) units
-    const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
-    const anchor = pop.parentElement;
-    const anchorLeft = anchor.getBoundingClientRect().left / z;
-    const w = pop.offsetWidth, gutter = 12;
-    const center = anchorLeft + anchor.offsetWidth / 2;
-    let left = center - w / 2;
-    const maxLeft = window.innerWidth / z - gutter - w;
-    const shifted = Math.min(Math.max(left, gutter), maxLeft);
-    pop.style.setProperty('--shift', (shifted - left) + 'px');
+  /* ----- Fake QR code (finder patterns + deterministic noise) ----- */
+  (function drawQR() {
+    const n = 25, cells = [];
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const inFinder = (x, y) => [[0,0],[n-7,0],[0,n-7]].some(([fx,fy]) => x >= fx-1 && x <= fx+7 && y >= fy-1 && y <= fy+7);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      if (!inFinder(x, y) && rnd() < 0.5) cells.push(`M${x} ${y}h1v1h-1z`);
+    }
+    const finder = (fx, fy) => `M${fx} ${fy}h7v7h-7zM${fx+1} ${fy+1}v5h5v-5zM${fx+2} ${fy+2}h3v3h-3z`;
+    $('qr').innerHTML = `<path fill="#111" fill-rule="evenodd" d="${finder(0,0)}${finder(n-7,0)}${finder(0,n-7)}${cells.join('')}"/>`;
+  })();
+
+  /* ----- Window stacking ----- */
+  function frontmost() { return order[order.length - 1]; }
+  function render() {
+    order.forEach((name, i) => {
+      wins[name].style.zIndex = 10 + i;
+      wins[name].classList.toggle('focused', name === frontmost());
+    });
   }
-  place(); addEventListener('resize', place);
+  function focusWindow(name) {
+    order = order.filter((n) => n !== name).concat(name);
+    render();
+    onFrontmostChanged();
+  }
+
+  /* ----- Menti Join behaviour (mirrors the real app) ----- */
+  // The app re-checks while the video call is in front and offers "Join Menti" when it sees a code,
+  // or "Back to Menti" when you return to the tab you already joined from.
+  function onFrontmostChanged() {
+    clearTimeout(scanTimer);
+    const front = frontmost();
+    if (front === 'meet' && !wins.menti.classList.contains('open')) {
+      // Same tab as last time → "Back to Menti"; first visit → "Join Menti"
+      setMenu(joinedAt ? 'back' : 'join');
+    } else if (front === 'notes') {
+      setMenu('idle');
+    }
+  }
+  function setMenu(state) {
+    menuState = state;
+    status.classList.toggle('join', state === 'join');
+    status.classList.toggle('back', state === 'back');
+    $('join-label').textContent = state === 'back' ? 'Back to Menti' : 'Join Menti';
+    tryit.classList.toggle('show', state === 'join' && !tried);
+    placePopover();
+  }
+  function meetVisibleOnTop() {
+    // Treat the call as "visible" if it's the frontmost of the two desktop windows
+    return order.filter((n) => n !== 'menti').pop() === 'meet';
+  }
+  function openMenti() {
+    tried = true; tryit.classList.remove('show');
+    joinedAt = new Date();
+    $('joined-at').textContent = 'Joined at ' + joinedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    popover.classList.add('can-rejoin');
+    wins.menti.classList.remove('open'); void wins.menti.offsetWidth;  // restart animation
+    wins.menti.classList.add('open');
+    if (!order.includes('menti')) order.push('menti');
+    focusWindow('menti');
+  }
+  function closeMenti() {
+    wins.menti.classList.remove('open');
+    order = order.filter((n) => n !== 'menti');
+    focusWindow(order[order.length - 1]);
+  }
+  function scan(thenOpen) {
+    // Manual scan: open the window if a code is on screen, otherwise show the failure popover.
+    setTimeout(() => {
+      popover.classList.remove('scanning');
+      if (meetVisibleOnTop()) { closePopover(); thenOpen(); }
+      else if (!popover.classList.contains('open')) { openPopover(); }
+    }, 900);
+  }
+  function openPopover() { popover.classList.add('open'); status.classList.add('pressed'); placePopover(); }
+  function closePopover() { popover.classList.remove('open', 'scanning'); status.classList.remove('pressed'); }
+
+  status.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closePopover();
+    if (menuState !== 'idle') { setMenu('idle'); openMenti(); return; }
+    status.classList.add('pressed');
+    setTimeout(() => status.classList.remove('pressed'), 150);
+    scan(openMenti);
+  });
+  $('retry').addEventListener('click', (e) => { e.stopPropagation(); popover.classList.add('scanning'); scan(openMenti); });
+  $('rejoin').addEventListener('click', (e) => { e.stopPropagation(); closePopover(); setMenu('idle'); openMenti(); });
+  $('quit').addEventListener('click', (e) => { e.stopPropagation(); closePopover(); });
+  popover.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closePopover);
+
+  Object.entries(wins).forEach(([name, el]) => el.addEventListener('mousedown', () => {
+    if (frontmost() !== name) focusWindow(name);
+  }));
+  $('menti-close').addEventListener('mousedown', (e) => { e.stopPropagation(); closeMenti(); });
+
+  /* ----- Fit the stage and keep the popover on screen ----- */
+  const wrap = $('stage-wrap'), stage = $('stage');
+  function fit() {
+    const r = wrap.getBoundingClientRect();
+    const s = Math.min(r.width / 860, r.height / 600, 1.25);
+    stage.style.setProperty('--s', Math.max(s, 0.2));
+  }
+  function placePopover() {
+    popover.style.setProperty('--shift', '0px');
+    if (!popover.classList.contains('open')) return;
+    const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
+    const anchor = popover.parentElement;
+    const anchorLeft = anchor.getBoundingClientRect().left / z;
+    const w = popover.offsetWidth, gutter = 12;
+    const left = anchorLeft + anchor.offsetWidth / 2 - w / 2;
+    const clamped = Math.min(Math.max(left, gutter), window.innerWidth / z - gutter - w);
+    popover.style.setProperty('--shift', (clamped - left) + 'px');
+  }
+  addEventListener('resize', () => { fit(); placePopover(); });
+  fit();
+
+  /* ----- The vote inside the Menti window ----- */
+  const answers = ['yes', 'now', 'no'];
+  const tally = { yes: 8, now: 4, no: 2 };           // the presentation is already live
+  const replies = {
+    yes: ['🎉', 'Nice. You’re all set for the next Menti.'],
+    now: ['⏳', 'Good timing, it’s a tiny download.'],
+    no:  ['👇', 'The Download button is right over there.'],
+  };
+  const page = document.querySelector('.menti-page');
+  const optRows = [...document.querySelectorAll('.opt-row')];
+  let selected = null, submitted = null;
+
+  function renderResults() {
+    const max = Math.max(...answers.map((a) => tally[a]));
+    document.querySelectorAll('#results .result').forEach((row, i) => {
+      const n = tally[answers[i]];
+      row.querySelector('.fill').style.setProperty('--w', (n / max * 100) + '%');
+      row.querySelector('.n').textContent = n;
+    });
+  }
+  optRows.forEach((row) => row.addEventListener('click', () => {
+    selected = row.dataset.answer;
+    optRows.forEach((r) => r.classList.toggle('sel', r === row));
+    $('submit').disabled = false;
+  }));
+  $('submit').addEventListener('click', () => {
+    if (!selected) return;
+    submitted = selected; tally[submitted]++;
+    $('thanks-emoji').textContent = replies[submitted][0];
+    $('thanks-text').textContent = replies[submitted][1];
+    page.classList.add('voted');
+    document.querySelector('.slide').classList.add('revealed');
+    renderResults();
+  });
+  $('change').addEventListener('click', () => {
+    if (submitted) { tally[submitted]--; submitted = null; renderResults(); }
+    page.classList.remove('voted');
+  });
+  renderResults();
+
+  /* ----- Initial state ----- */
+  focusWindow('meet');   // start with the call in front, so Join Menti is offered right away
+})();
 </script>
 </body>
 </html>
