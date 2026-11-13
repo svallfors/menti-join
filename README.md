@@ -8,7 +8,9 @@ A tiny Mac menu bar app that joins the Menti on your screen in one click.
 2. Open it. A Menti icon appears in the menu bar.
 3. Allow **Screen Recording** and **Automation for Google Chrome** when asked.
 
-When you're in Chrome on Google Meet or Mentimeter and a Menti QR code or join code is on screen, the menu bar item changes to **Join Menti**. Click it to open the voting page. Closed the window and the code is gone? Go back to the same tab and click **Back to Menti**, or click the icon and choose **Rejoin last Menti**. Click the icon any time to scan manually.
+When you're in Chrome on Google Meet or Mentimeter and a Menti QR code or join code is on screen, the menu bar item changes to **Join Menti**. Click it and choose the Menti to open the voting page. Closed the window? Go back to the same tab and click **Back to Menti**.
+
+Every click on the icon opens a menu with everything in it: the Menti on screen and the last one you joined (with title and first slide), **Scan Screen for Menti**, **Auto Scanning** on or off, and **Check for Updates…**. From version 1.0.3 the app keeps itself up to date.
 
 Requires macOS 15.5 or later. Signed and notarized by Apple.
 
