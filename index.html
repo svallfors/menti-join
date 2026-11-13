@@ -275,6 +275,10 @@
   .menti-page.voted .vote { display: none; }
   .menti-page.voted .thanks { display: block; }
   #win-menti.open .menti-page.voted .thanks { animation-delay: 0s; animation-duration: .25s; }
+  /* Back from minimized: the page is already loaded, so no progress bar or fade-in */
+  #win-menti.loaded .progress span { animation: none; width: 97%; }
+  #win-menti.loaded .menti-page > * { animation: none; opacity: 1; }
+  #win-menti.loaded .menti-page.voted .thanks { opacity: 0; animation: fade .25s ease-out forwards; }
   .menti-page .spacer { flex: 1; }
   .menti-links { display: flex; gap: 22px; font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em; }
   .menti-links span { display: inline-flex; align-items: center; gap: 5px; }
@@ -637,10 +641,11 @@
   }
   function hideMenti() {
     wins.menti.classList.remove('open');
+    wins.menti.classList.add('loaded');      // reopening it doesn't load it again
     order = order.filter((n) => n !== 'menti');
     focusWindow(order[order.length - 1]);
   }
-  function join() { joinedAt = new Date(); setMenu('idle'); showMenti(); }
+  function join() { joinedAt = new Date(); setMenu('idle'); wins.menti.classList.remove('loaded'); showMenti(); }
   // The red button leaves: the window and the Active Menti go away.
   function leave() { joinedAt = null; hideMenti(); }
   function scanWhileMenuIsOpen() {
