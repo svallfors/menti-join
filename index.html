@@ -19,7 +19,7 @@
 <style>
   :root {
     --bar-h: 30px;
-    --pop-bg: rgba(246, 246, 248, 0.9);
+    --pop-bg: rgba(246, 246, 248, 0.7);
     --pop-border: rgba(0, 0, 0, 0.12);
     --pop-text: #1d1d1f;
     --pop-divider: rgba(0, 0, 0, 0.1);
@@ -30,7 +30,7 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --pop-bg: rgba(40, 40, 46, 0.88);
+      --pop-bg: rgba(40, 40, 46, 0.68);
       --pop-border: rgba(255, 255, 255, 0.14);
       --pop-text: #f5f5f7;
       --pop-divider: rgba(255, 255, 255, 0.12);
@@ -55,12 +55,17 @@
     position: fixed; inset: 0 0 auto 0; height: var(--bar-h);
     display: flex; align-items: center; justify-content: flex-end;
     padding: 0 10px;
-    background: rgba(10, 12, 40, 0.28);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    backdrop-filter: blur(24px) saturate(160%);
     font-size: 14px; letter-spacing: -0.01em;
     user-select: none; -webkit-user-select: none; z-index: 50;
     zoom: var(--z, 1);
+  }
+  /* The bar's blur lives on its own layer: a blur on the bar itself would stop the menu's
+     blur (a child) from reaching the page behind it. */
+  .menubar::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: rgba(10, 12, 40, 0.28);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
   }
   .menubar .right { display: flex; align-items: center; height: 100%; }
   .menubar .right > * { display: flex; align-items: center; height: calc(var(--bar-h) - 6px); padding: 0 8px; border-radius: 6px; }
@@ -69,9 +74,7 @@
   .status-item { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 8px; border-radius: 6px; color: #fff; cursor: pointer; position: relative; }
   .status-item.pressed { background: rgba(255, 255, 255, 0.24); }
   .status-icon { width: 17px; height: 17px; flex: none; display: block; }
-  .status-item .join-icon, .status-item .back-icon, .status-item .join-label { display: none; }
-  .status-item.back .status-icon { display: none; }
-  .status-item.back .back-icon, .status-item.back .join-label { display: block; }
+  .status-item .join-icon, .status-item .join-label { display: none; }
   .status-item.join .status-icon { display: none; }
   .status-item.join .join-icon, .status-item.join .join-label { display: block; }
   .join-label { white-space: nowrap; }
@@ -94,8 +97,8 @@
     transform: translateX(var(--shift, 0px));
     color: var(--pop-text);
     background: var(--pop-bg);
-    -webkit-backdrop-filter: blur(30px) saturate(180%);
-    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
     border: 0.5px solid var(--pop-border);
     border-radius: 12px;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32), 0 3px 10px rgba(0, 0, 0, 0.16);
@@ -234,6 +237,10 @@
   @keyframes win-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
   #win-menti .titlebar { background: #fff; border-bottom: 0; color: #444; }
   #win-menti:not(.focused) .titlebar { background: #fff; }
+  .pin { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: grid; place-items: center; border-radius: 5px; color: #8a8a8e; cursor: pointer; }
+  .pin:hover { background: rgba(0, 0, 0, .06); }
+  .pin.on { color: #0a7cff; }
+  .pin.on path:first-child { fill: currentColor; }
   .progress { height: 4px; background: #e8e8f6; }
   .progress span { display: block; height: 100%; width: 0; background: #b3b6ee; }
   #win-menti.open .progress span { animation: load 1.2s ease-out .1s forwards; }
@@ -353,10 +360,6 @@
             <defs><mask id="arrow-cut"><rect width="16" height="16" fill="#fff"/><path d="M4.3 8h6.6M8.2 4.9 11.3 8l-3.1 3.1" stroke="#000" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>
             <circle cx="8" cy="8" r="7.5" fill="#fff" mask="url(#arrow-cut)"/>
           </svg>
-          <svg class="back-icon" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
-            <defs><mask id="back-cut"><rect width="16" height="16" fill="#fff"/><path d="M6.4 4.6 3.9 7.1l2.5 2.5M4.2 7.1h4.6a2.6 2.6 0 0 1 0 5.2H7.6" stroke="#000" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>
-            <circle cx="8" cy="8" r="7.5" fill="#fff" mask="url(#back-cut)"/>
-          </svg>
           <span class="join-label" id="join-label">Join Menti</span>
         </button>
         <div class="tryit" id="tryit" aria-hidden="true">
@@ -463,7 +466,10 @@
 
         <!-- Menti Join's participant window -->
         <div class="win" id="win-menti" data-win="menti">
-          <div class="titlebar"><div class="lights"><i id="menti-close" title="Close" style="cursor:pointer"></i><i></i><i></i></div><div class="title">Menti</div></div>
+          <div class="titlebar"><div class="lights"><i id="menti-close" title="Leave" style="cursor:pointer"></i><i id="menti-min" title="Minimize" style="cursor:pointer"></i><i></i></div><div class="title">Weekly all-hands</div>
+            <button class="pin" id="menti-pin" title="Show always on top" aria-label="Show always on top">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M5.5 1.8h5l-.7 4.4 2.4 2.6H3.8l2.4-2.6z"/><path d="M8 8.8v5.4" stroke-linecap="round"/></svg>
+            </button></div>
           <div class="progress"><span></span></div>
           <div class="menti-page">
             <svg class="wordmark" viewBox="0 0 116 25" aria-label="Menti"><use href="#menti-mark"/><use href="#menti-word"/></svg>
@@ -553,9 +559,9 @@
   const status = $('status'), menu = $('menu'), tryit = $('tryit');
   const wins = { notes: $('win-notes'), meet: $('win-meet'), menti: $('win-menti') };
   let order = ['meet', 'notes'];            // back → front
-  let menuState = 'idle', scanTimer = null, tried = false, joinedAt = null;
-  let autoScan = true, scanning = false, scanFailed = false;
-  const MENTI_TITLE = 'Weekly all-hands', VERSION = '1.0.3';
+  let menuState = 'idle', scanTimer = null, tried = false, joinedAt = null;   // joinedAt: the active Menti
+  let autoScan = true, onTop = false, menuScanTimer = null;
+  const MENTI_TITLE = 'Weekly all-hands', VERSION = '1.0.4';
 
   /* ----- Clock ----- */
   function tick() {
@@ -583,7 +589,7 @@
   function frontmost() { return order[order.length - 1]; }
   function render() {
     order.forEach((name, i) => {
-      wins[name].style.zIndex = 10 + i;
+      wins[name].style.zIndex = (name === 'menti' && onTop ? 40 : 10) + i;
       wins[name].classList.toggle('focused', name === frontmost());
     });
   }
@@ -594,25 +600,26 @@
   }
 
   /* ----- Menti Join behaviour (mirrors the real app) ----- */
-  // The app re-checks while the video call is in front and offers "Join Menti" when it sees a code,
-  // or "Back to Menti" when you return to the tab you already joined from.
+  // The app checks while the video call is in front and offers "Join Menti" when it sees a Menti
+  // you're not in. The one you're in is the Active Menti: nothing to offer for it.
   function onFrontmostChanged() {
     clearTimeout(scanTimer);
     const front = frontmost();
-    if (front === 'meet' && !wins.menti.classList.contains('open')) {
-      // Same tab as last time → "Back to Menti"; first visit → "Join Menti"
-      setMenu(joinedAt ? 'back' : autoScan ? 'join' : 'idle');
-    } else if (front === 'notes') {
-      setMenu('idle');
-    }
+    if (front === 'meet') setMenu(!joinedAt && autoScan ? 'join' : 'idle');
+    else if (front === 'notes') setMenu('idle');
   }
-  function setMenu(state) {
+  // nudge: the menu bar item says "Join Menti". Only for a Menti found on its own; one found
+  // while you have the menu open shows in the menu only, and the item never resizes while open.
+  let nudge = false;
+  function setMenu(state, isNudge = true) {
     menuState = state;
-    status.classList.toggle('join', state === 'join');
-    status.classList.toggle('back', state === 'back');
-    $('join-label').textContent = state === 'back' ? 'Back to Menti' : 'Join Menti';
-    tryit.classList.toggle('show', state === 'join' && !tried && !menu.classList.contains('open'));
+    nudge = state === 'join' && isNudge && !menu.classList.contains('open');
+    updateStatusItem();
+    tryit.classList.toggle('show', nudge && !tried);
     if (menu.classList.contains('open')) renderMenu();
+  }
+  function updateStatusItem() {
+    if (!menu.classList.contains('open')) status.classList.toggle('join', menuState === 'join' && nudge);
   }
   function meetVisibleOnTop() {
     // Treat the call as "visible" if it's the frontmost of the two desktop windows
@@ -620,38 +627,41 @@
     return !document.body.classList.contains('downloaded') && order.filter((n) => n !== 'menti').pop() === 'meet';
   }
   const fmtTime = (d) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  function openMenti() {
+  function showMenti() {
+    // Opens the active Menti's window (also from "minimized")
     tried = true; tryit.classList.remove('show');
-    joinedAt = new Date();
     wins.menti.classList.remove('open'); void wins.menti.offsetWidth;  // restart animation
     wins.menti.classList.add('open');
     if (!order.includes('menti')) order.push('menti');
     focusWindow('menti');
   }
-  function closeMenti() {
+  function hideMenti() {
     wins.menti.classList.remove('open');
     order = order.filter((n) => n !== 'menti');
     focusWindow(order[order.length - 1]);
   }
-  function join() { setMenu('idle'); openMenti(); }
-  function scanScreen() {
-    // Like the app: the menu closes, the scan runs, the Menti opens if it's on screen,
-    // otherwise the menu comes back and says so.
-    scanning = true; scanFailed = false;
-    setTimeout(() => {
-      scanning = false;
-      if (meetVisibleOnTop()) { closeMenu(); join(); }
-      else { scanFailed = true; if (menu.classList.contains('open')) renderMenu(); else openMenu(); }
-    }, 900);
+  function join() { joinedAt = new Date(); setMenu('idle'); showMenti(); }
+  // The red button leaves: the window and the Active Menti go away.
+  function leave() { joinedAt = null; hideMenti(); }
+  function scanWhileMenuIsOpen() {
+    // Like the app: while the menu is open the screen is scanned about once a second, whatever
+    // is in front, and a Menti you're not in is offered in the menu right away.
+    if (menuState === 'idle' && meetVisibleOnTop() && !joinedAt) setMenu('join', false);
+  }
+  function setOnTop(on) {
+    onTop = on;
+    $('menti-pin').classList.toggle('on', on);
+    $('menti-pin').title = on ? 'Showing always on top. Click to stop.' : 'Show always on top';
+    render();
   }
   function setAutoScan(on) {
     autoScan = on;
     if (!on && menuState === 'join') setMenu('idle');
-    else onFrontmostChanged();
+    else if (menuState !== 'join') onFrontmostChanged();   // like the app: an existing offer stays as it is
   }
 
   /* ----- The menu: section headers say the action, items are the Menti itself ----- */
-  function item(label, { sub, run, check, key, thumb, header, disabled } = {}) {
+  function item(label, { sub, run, check, key, thumb, header, disabled, wrap } = {}) {
     const el = document.createElement(run ? 'button' : 'div');
     el.className = 'mi ' + (header ? 'header' : run && !disabled ? 'action' : 'disabled');
     el.setAttribute('role', 'menuitem');
@@ -660,6 +670,7 @@
       + `<span class="label"></span>` + (key ? `<span class="key">${key}</span>` : '');
     const text = el.querySelector('.label');
     text.textContent = label;
+    if (wrap) text.style.whiteSpace = 'pre';
     if (sub) { const s = document.createElement('span'); s.className = 'sub'; s.textContent = sub; text.append(s); }
     if (run && !disabled) el.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); run(); });
     return el;
@@ -671,19 +682,14 @@
     if (menuState === 'join') {
       items.push(item('Join Menti', { header: true }),
         item(MENTI_TITLE, { sub: '1 question · Anonymous', thumb: true, run: join }), sep());
-    } else if (menuState === 'back') {
-      items.push(item('Open again', { header: true }),
-        item(MENTI_TITLE, { sub: 'Joined at ' + fmtTime(joinedAt), thumb: true, run: join }), sep());
-    } else if (joinedAt) {
-      items.push(item('Rejoin', { header: true }),
-        item(MENTI_TITLE, { sub: 'Joined at ' + fmtTime(joinedAt), thumb: true, run: join }), sep());
     }
-    if (scanning) items.push(item('Scanning screen…'));
-    else if (scanFailed) items.push(item('No Menti found on screen'), item('Make sure the QR code or join code is visible'));
-    items.push(item(scanFailed ? 'Scan Again' : 'Scan Screen for Menti', { run: scanScreen, disabled: scanning }));
-    items.push(sep(), item('Auto Scanning', { header: true }),
-      item('On', { check: autoScan, run: () => setAutoScan(true) }),
-      item('Off', { check: !autoScan, run: () => setAutoScan(false) }));
+    if (joinedAt) {
+      items.push(item('Active Menti', { header: true }),
+        item(MENTI_TITLE, { sub: 'Joined at ' + fmtTime(joinedAt), thumb: true, run: showMenti }),
+        item('Leave', { run: leave }), sep());
+    }
+    items.push(item('Show always on top', { check: onTop, run: () => setOnTop(!onTop) }),
+      item('Look for Mentis in Google Meet', { check: autoScan, run: () => setAutoScan(!autoScan) }));
     items.push(sep(), item('Menti Join ' + VERSION),
       item('Check for Updates…', { run: () => {} }),
       item('Quit Menti Join', { key: '⌘Q', run: () => {} }));
@@ -694,12 +700,15 @@
     renderMenu();
     menu.classList.add('open'); status.classList.add('pressed'); tryit.classList.remove('show');
     placeMenu();
+    clearInterval(menuScanTimer);
+    menuScanTimer = setInterval(scanWhileMenuIsOpen, 1000);
   }
   function closeMenu() {
     if (!menu.classList.contains('open')) return;
     menu.classList.remove('open'); status.classList.remove('pressed');
-    if (!scanning) scanFailed = false;   // a failure is reported once
-    tryit.classList.toggle('show', menuState === 'join' && !tried);
+    clearInterval(menuScanTimer);
+    updateStatusItem();
+    tryit.classList.toggle('show', menuState === 'join' && nudge && !tried);
   }
 
   status.addEventListener('click', (e) => {
@@ -714,7 +723,10 @@
   Object.entries(wins).forEach(([name, el]) => el.addEventListener('mousedown', () => {
     if (frontmost() !== name) focusWindow(name);
   }));
-  $('menti-close').addEventListener('mousedown', (e) => { e.stopPropagation(); closeMenti(); });
+  $('menti-close').addEventListener('mousedown', (e) => { e.stopPropagation(); leave(); });
+  $('menti-min').addEventListener('mousedown', (e) => { e.stopPropagation(); hideMenti(); });
+  $('menti-pin').addEventListener('mousedown', (e) => e.stopPropagation());
+  $('menti-pin').addEventListener('click', (e) => { e.stopPropagation(); setOnTop(!onTop); });
 
   /* ----- Fit the stage and keep the menu on screen ----- */
   const wrap = $('stage-wrap'), stage = $('stage');
@@ -783,7 +795,7 @@
   $('back').addEventListener('click', (e) => {
     e.preventDefault();
     document.body.classList.remove('downloaded');
-    onFrontmostChanged();      // restore Join / Back to Menti for the window in front
+    onFrontmostChanged();      // restore Join Menti for the window in front
   });
 
   /* ----- Initial state ----- */
